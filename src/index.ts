@@ -1,16 +1,26 @@
-import { createServer, IncomingMessage, ServerResponse } from 'node:http';
+import express, { Request, Response, NextFunction } from 'express';
 import { CONFIG } from './config/env';
-import { getHealthStatus } from './controllers/healthController';
+import healthRoutes from './routes/healthRoutes';
 
-const server = createServer((req: IncomingMessage, res: ServerResponse) => {
-  if (req.url === '/health' || req.url === '/') {
-    getHealthStatus(req, res);
-  } else {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Endpoint not found' }));
-  }
+const app = express();
+
+// Middleware: Enable JSON parsing for incoming request bodies
+app.use(express.json());
+
+// Middleware: Basic request logger
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
 });
 
-server.listen(CONFIG.PORT, () => {
-  console.log(`[SYS_INIT] ${CONFIG.APP_NAME} running on port ${CONFIG.PORT}`);
+// Routes
+app.use('/api', healthRoutes);
+
+// Root Fallback
+app.get('/', (req: Request, res: Response) => {
+  res.json({ message: 'Welcome to Reactivation Core API' });
+});
+
+app.listen(CONFIG.PORT, () => {
+  console.log(`[SYS_INIT] Express server running on port ${CONFIG.PORT}`);
 });
